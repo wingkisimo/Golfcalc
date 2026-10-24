@@ -1,0 +1,15 @@
+{
+  "name": "골프 스코어 정산기",
+  "short_name": "골프정산",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2991/2991231.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
