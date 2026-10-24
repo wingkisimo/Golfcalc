@@ -4,23 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>골프 스코어 정산기</title>
+  <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1976d2">
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f0f2f5; margin: 0; padding: 16px; }
-    .container { max-width: 420px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .container { max-width: 440px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     h2 { margin: 0 0 16px 0; text-align: center; color: #222; font-size: 20px; }
     .config-row { display: flex; gap: 10px; margin-bottom: 12px; }
     .field { flex: 1; }
     label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #555; }
-    input, select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; outline: none; }
     .status-badge { background: #e3f2fd; color: #1976d2; padding: 10px; border-radius: 6px; font-size: 14px; text-align: center; font-weight: bold; margin-bottom: 16px; }
-    .player-row { display: grid; grid-template-columns: 45px 1fr 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .player-name { font-weight: bold; text-align: center; font-size: 15px; }
-    .col-header { display: grid; grid-template-columns: 45px 1fr 1fr 1fr; gap: 8px; text-align: center; font-size: 12px; font-weight: bold; color: #777; margin-bottom: 6px; }
+    .player-row { display: grid; grid-template-columns: 80px 1fr 1fr 1.2fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .col-header { display: grid; grid-template-columns: 80px 1fr 1fr 1.2fr; gap: 8px; text-align: center; font-size: 12px; font-weight: bold; color: #777; margin-bottom: 6px; }
+    .name-input { text-align: center; font-weight: bold; background: #f8f9fa; border: 1px solid #ddd; padding: 8px 4px; font-size: 14px; }
     .score-input { text-align: center; font-weight: bold; background: #fffde7; }
-    .diff-box, .money-box { text-align: right; padding: 8px 10px; border-radius: 6px; font-weight: bold; font-size: 15px; }
+    .diff-box, .money-box { text-align: right; padding: 8px 6px; border-radius: 6px; font-weight: bold; font-size: 14px; }
     .plus { color: #1565c0; }
     .minus { color: #d32f2f; }
     button.calc-btn { width: 100%; margin-top: 14px; padding: 12px; background: #1976d2; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
@@ -50,7 +51,7 @@
   <div class="status-badge" id="multiplierLabel">배판 적용: 1배 (기본판)</div>
 
   <div class="col-header">
-    <div>선수</div>
+    <div>선수명</div>
     <div>타수차</div>
     <div>타수합</div>
     <div>정산금액</div>
@@ -62,16 +63,17 @@
 </div>
 
 <script>
-  const players = ['a', 'b', 'c', 'd'];
+  const playerIds = [0, 1, 2, 3];
+  const defaultNames = ['선수 1', '선수 2', '선수 3', '선수 4'];
 
   function renderRows() {
     const list = document.getElementById('playerList');
-    list.innerHTML = players.map(p => `
+    list.innerHTML = playerIds.map(i => `
       <div class="player-row">
-        <div class="player-name">${p}</div>
-        <div><input type="number" class="score-input" id="score_${p}" value="0" oninput="calculate()"></div>
-        <div class="diff-box" id="diff_${p}">0</div>
-        <div class="money-box" id="money_${p}">0</div>
+        <div><input type="text" class="name-input" id="name_${i}" value="${defaultNames[i]}"></div>
+        <div><input type="number" class="score-input" id="score_${i}" value="0" oninput="calculate()"></div>
+        <div class="diff-box" id="diff_${i}">0</div>
+        <div class="money-box" id="money_${i}">0</div>
       </div>
     `).join('');
   }
@@ -79,7 +81,7 @@
   function calculate() {
     const par = parseInt(document.getElementById('par').value, 10);
     const baseMoney = parseInt(document.getElementById('baseMoney').value, 10) || 0;
-    const scores = players.map(p => parseInt(document.getElementById(`score_${p}`).value, 10) || 0);
+    const scores = playerIds.map(i => parseInt(document.getElementById(`score_${i}`).value, 10) || 0);
 
     // 1. 배판 조건 검사
     const hasNegative = scores.some(s => s < 0);
@@ -94,25 +96,24 @@
     document.getElementById('multiplierLabel').innerText = `배판 적용: ${multiplier}배 (${isDouble ? '배판 적용됨' : '기본판'})`;
     document.getElementById('multiplierLabel').style.color = isDouble ? '#d32f2f' : '#1976d2';
 
-    // 2. 타수 차이 및 버디 보너스 정산 (엑셀 수식 기반)
+    // 2. 타수 차이 및 버디 보너스 정산
     const sumScores = scores.reduce((a, b) => a + b, 0);
     const negCount = scores.filter(s => s < 0).length;
     const nonNegCount = scores.filter(s => s >= 0).length;
 
     scores.forEach((s, idx) => {
-      const p = players[idx];
       let bonus = 0;
       if (s < 0) {
-        bonus = nonNegCount; // 버디 친 사람: 일반 플레이어 수만큼 +1타씩
+        bonus = nonNegCount; // 버디 기록자: 비버디 인원수만큼 +1타씩 보너스
       } else {
-        bonus = -negCount;   // 버디 못한 사람: 버디 친 사람 수만큼 -1타씩
+        bonus = -negCount;   // 비버디 기록자: 버디 인원수만큼 -1타씩 벌타
       }
 
       const diff = (sumScores - 4 * s) + bonus;
       const money = diff * multiplier * baseMoney;
 
-      const diffEl = document.getElementById(`diff_${p}`);
-      const moneyEl = document.getElementById(`money_${p}`);
+      const diffEl = document.getElementById(`diff_${idx}`);
+      const moneyEl = document.getElementById(`money_${idx}`);
 
       diffEl.innerText = diff > 0 ? `+${diff}` : `${diff}`;
       diffEl.className = `diff-box ${diff > 0 ? 'plus' : (diff < 0 ? 'minus' : '')}`;
